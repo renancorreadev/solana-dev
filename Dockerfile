@@ -109,11 +109,11 @@ RUN cargo install --git https://github.com/coral-xyz/anchor avm --locked
 RUN avm install 0.30.1 && avm use 0.30.1
 
 LABEL \
-  org.label-schema.name="solana_anchor" \
-  org.label-schema.description="Solana Anchor Development Container" \
-  org.label-schema.url="https://github.com/renancorreadev/solana_anchor_dev_container" \
-  org.label-schema.vcs-url="git@github.com:renancorreadev/solana_anchor_dev_container.git" \
+  org.label-schema.name="solana-dev" \
+  org.label-schema.description="Solana + Anchor + node Development Container" \
+  org.label-schema.url="https://github.com/renancorreadev/solana-dev" \
+  org.label-schema.vcs-url="git@github.com:renancorreadev/solana-dev.git" \
   org.label-schema.vendor="renancorreadev" \
   org.label-schema.version=${SOLANA_VERSION} \
   org.label-schema.schema-version="1.0" \
-  org.opencontainers.image.description="Solana Anchor Development Container for Visual Studio Code"
+  org.opencontainers.image.description="Solana + Anchor + node Development Container for Visual Studio Code"
