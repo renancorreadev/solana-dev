@@ -1,20 +1,11 @@
-# 1.18.26 (2024-12-06)
+# Changelog
 
-* latest solana release
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-# 1.18.25_8 (2024-10-29)
+### 0.0.2 (2025-03-09)
 
-* restore build-essential 🤷
 
-# 1.18.25_5 (2024-10-16)
+### Features
 
-* fixing path and other issues
-
-# 1.18.25_2 (2024-10-16)
-
-* cleanup go build
-* depend on rust image
-
-# 1.18.25 (2024-10-04)
-
-* Solana 1.18.25
+* add anchor ([4e1373a](https://github.com/renancorreadev/solana-dev/commit/4e1373abd271e8f053386cff9d84dd6a5a818c1a))
+* v1 ([c548ebb](https://github.com/renancorreadev/solana-dev/commit/c548ebbdeaf0802b8495afcecccb1b4a4f665e4a))

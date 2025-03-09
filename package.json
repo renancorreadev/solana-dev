@@ -1,0 +1,20 @@
+{
+  "name": "solana-dev",
+  "version": "0.0.2",
+  "description": "Solana + Anchor + node Development Container for Visual Studio Code",
+  "author": "Renan Correa",
+  "license": "MIT",
+  "scripts": {
+    "release": "standard-version"
+  },
+  "standard-version": {
+    "scripts": {
+      "postbump": "echo 'Version updated!'",
+      "postchangelog": "git add CHANGELOG.md",
+      "postcommit": "git push --follow-tags origin main"
+    }
+  },
+  "devDependencies": {
+    "standard-version": "^9.5.0"
+  }
+}
