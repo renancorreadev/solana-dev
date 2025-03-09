@@ -7,38 +7,38 @@ ARG TARGETARCH
 # Install yamlfmt
 WORKDIR /yamlfmt
 RUN go install github.com/google/yamlfmt/cmd/yamlfmt@latest && \
-    strip $(which yamlfmt) && \
-    yamlfmt --version
+  strip $(which yamlfmt) && \
+  yamlfmt --version
 
 FROM rust:1-slim AS builder
 ARG TARGETARCH
 RUN export DEBIAN_FRONTEND=noninteractive && \
   apt-get update && \
   apt-get install -y -q --no-install-recommends \
-    build-essential \
-    ca-certificates \
-    curl \
-    git \
-    gnupg2 \
-    libc6-dev \ 
-    libclang-dev \
-    libssl-dev \
-    libudev-dev \
-    linux-headers-${TARGETARCH} \
-    llvm \
-    openssl \
-    pkg-config \
-    protobuf-compiler \
-    python3 \
-    && \
+  build-essential \
+  ca-certificates \
+  curl \
+  git \
+  gnupg2 \
+  libc6-dev \ 
+  libclang-dev \
+  libssl-dev \
+  libudev-dev \
+  linux-headers-${TARGETARCH} \
+  llvm \
+  openssl \
+  pkg-config \
+  protobuf-compiler \
+  python3 \
+  && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV USER=solana
 RUN useradd --create-home -s /bin/bash ${USER} && \
-    usermod -a -G sudo ${USER} && \
-    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
-    chown -R ${USER}:${USER} /home/${USER}
+  usermod -a -G sudo ${USER} && \
+  echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
+  chown -R ${USER}:${USER} /home/${USER}
 
 USER solana
 
@@ -64,20 +64,20 @@ FROM jac18281828/tsdev:latest
 RUN export DEBIAN_FRONTEND=noninteractive && \
   apt-get update && \
   apt-get install -y -q --no-install-recommends \
-    build-essential \
-    ca-certificates \
-    curl \
-    git \
-    libssl-dev \
-    openssl \
-    pkg-config \
-    procps \
-    protobuf-compiler \
-    python3 \
-    python3-pip \
-    ripgrep \
-    sudo \
-    && \
+  build-essential \
+  ca-certificates \
+  curl \
+  git \
+  libssl-dev \
+  openssl \
+  pkg-config \
+  procps \
+  protobuf-compiler \
+  python3 \
+  python3-pip \
+  ripgrep \
+  sudo \
+  && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -85,9 +85,9 @@ RUN echo "building platform $(uname -m)"
 
 ENV USER=solana
 RUN useradd --create-home -s /bin/bash ${USER} && \
-    usermod -a -G sudo ${USER} && \
-    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
-    chown -R ${USER}:${USER} /home/${USER}
+  usermod -a -G sudo ${USER} && \
+  echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
+  chown -R ${USER}:${USER} /home/${USER}
 
 ENV USER=solana
 ARG SOLANA_VERSION=1.18.26
@@ -105,12 +105,15 @@ ENV CARGO_HOME=/usr/local/cargo
 ENV RUSTUP_HOME=/usr/local/rustup
 RUN rustup default stable
 
+RUN cargo install --git https://github.com/coral-xyz/anchor avm --locked
+RUN avm install 0.30.1 && avm use 0.30.1
+
 LABEL \
-    org.label-schema.name="solana" \
-    org.label-schema.description="Solana Development Container" \
-    org.label-schema.url="https://github.com/jac18281828/solana" \
-    org.label-schema.vcs-url="git@github.com:jac18281828/solana.git" \
-    org.label-schema.vendor="jac18281828" \
-    org.label-schema.version=${SOLANA_VERSION} \
-    org.label-schema.schema-version="1.0" \
-    org.opencontainers.image.description="Solana Development Container for Visual Studio Code"
+  org.label-schema.name="solana_anchor" \
+  org.label-schema.description="Solana Anchor Development Container" \
+  org.label-schema.url="https://github.com/renancorreadev/solana_anchor_dev_container" \
+  org.label-schema.vcs-url="git@github.com:renancorreadev/solana_anchor_dev_container.git" \
+  org.label-schema.vendor="renancorreadev" \
+  org.label-schema.version=${SOLANA_VERSION} \
+  org.label-schema.schema-version="1.0" \
+  org.opencontainers.image.description="Solana Anchor Development Container for Visual Studio Code"
