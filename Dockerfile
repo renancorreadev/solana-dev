@@ -1,75 +1,121 @@
-# Etapa 1: Construir yamlfmt
+# Stage 1: Build yamlfmt
 FROM golang:1 AS go-builder
+# defined from build kit
+# DOCKER_BUILDKIT=1 docker build . -t ...
+ARG TARGETARCH
 
-# Instalar yamlfmt
+# Install yamlfmt
 WORKDIR /yamlfmt
 RUN go install github.com/google/yamlfmt/cmd/yamlfmt@latest && \
   strip $(which yamlfmt) && \
   yamlfmt --version
 
-# Etapa 2: Configurar ambiente de desenvolvimento
-FROM node:20-buster-slim
-
-# Variáveis de ambiente
-ENV USER=solana
-ENV HOME=/home/${USER}
-ENV CARGO_HOME=${HOME}/.cargo
-ENV RUSTUP_HOME=${HOME}/.rustup
-ENV SOLANA_VERSION=1.18.26
-ENV ANCHOR_VERSION=0.30.1
-ENV PATH=${HOME}/.local/share/solana/install/releases/${SOLANA_VERSION}/bin:${CARGO_HOME}/bin:${PATH}
-
-# Instalar dependências do sistema
-RUN apt-get update && \
-  apt-get install -y --no-install-recommends \
-  bash-completion \
+FROM rust:1-slim AS builder
+ARG TARGETARCH
+RUN export DEBIAN_FRONTEND=noninteractive && \
+  apt-get update && \
+  apt-get install -y -q --no-install-recommends \
   build-essential \
   ca-certificates \
   curl \
   git \
   gnupg2 \
+  libc6-dev \ 
+  libclang-dev \
   libssl-dev \
   libudev-dev \
+  linux-headers-${TARGETARCH} \
   llvm \
+  openssl \
   pkg-config \
   protobuf-compiler \
   python3 \
-  sudo \
-  wget \
-  fonts-powerline && \
+  && \
   apt-get clean && \
-  rm -rf /var/lib/apt/lists/* && \
-  useradd --create-home --shell /bin/bash ${USER} && \
-  usermod -aG sudo ${USER} && \
-  echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+  rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Alternar para o usuário solana
-USER ${USER}
-WORKDIR ${HOME}
+ENV USER=solana
+RUN useradd --create-home -s /bin/bash ${USER} && \
+  usermod -a -G sudo ${USER} && \
+  echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
+  chown -R ${USER}:${USER} /home/${USER}
 
-# Instalar Oh My Bash, configurar tema powerline e plugins de autocomplete, instalar Rust e Solana
-RUN bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)" --unattended && \
-  sed -i 's/OSH_THEME=.*/OSH_THEME="powerline"/' ${HOME}/.bashrc && \
-  sed -i 's/plugins=.*/plugins=(git docker)/' ${HOME}/.bashrc && \
-  curl https://sh.rustup.rs -sSf | sh -s -- -y && \
-  . ${CARGO_HOME}/env && \
-  rustup default stable && \
-  rustc --version && \
-  cargo --version && \
-  curl -sSfL https://release.solana.com/v${SOLANA_VERSION}/install | sh && \
-  solana --version && \
-  cargo install --git https://github.com/coral-xyz/anchor avm --locked && \
-  avm install ${ANCHOR_VERSION} && \
-  avm use ${ANCHOR_VERSION} && \
-  anchor --version
+USER solana
 
-COPY --from=go-builder /go/bin/yamlfmt /usr/local/bin/yamlfmt
+WORKDIR /build
+RUN chown -R ${USER}:${USER} /build
 
-# Configurar diretório de trabalho
-WORKDIR ${HOME}/workspace
+ENV PATH=${PATH}:/home/solana/.cargo/bin
+RUN echo ${PATH} && cargo --version
 
-# Expor porta para desenvolvimento
-EXPOSE 8899
+# Solana
+ARG SOLANA_VERSION=1.18.26
+ADD --chown=${USER}:${USER} https://github.com/solana-labs/solana/archive/refs/tags/v${SOLANA_VERSION}.tar.gz v${SOLANA_VERSION}.tar.gz
+RUN tar -zxvf v${SOLANA_VERSION}.tar.gz || { echo "Failed to extract tarball"; exit 1; }
+RUN ./solana-${SOLANA_VERSION}/scripts/cargo-install-all.sh /home/solana/.local/share/solana/install/releases/${SOLANA_VERSION}
+RUN for file in /home/solana/.local/share/solana/install/releases/${SOLANA_VERSION}/bin/*; do strip ${file}; done
+ENV PATH=$/build/bin:$PATH
 
-# Comando padrão
-CMD ["bash"]
+ENV SOLANA=${SOLANA_VERSION}
+CMD echo "Solana in /home/solana/.local/share/solana/install/releases/${SOLANA_VERSION}"
+
+FROM jac18281828/tsdev:latest
+
+RUN export DEBIAN_FRONTEND=noninteractive && \
+  apt-get update && \
+  apt-get install -y -q --no-install-recommends \
+  build-essential \
+  ca-certificates \
+  curl \
+  git \
+  libssl-dev \
+  openssl \
+  pkg-config \
+  procps \
+  protobuf-compiler \
+  python3 \
+  python3-pip \
+  ripgrep \
+  sudo \
+  && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN echo "building platform $(uname -m)"
+
+ENV USER=solana
+RUN useradd --create-home -s /bin/bash ${USER} && \
+  usermod -a -G sudo ${USER} && \
+  echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
+  chown -R ${USER}:${USER} /home/${USER}
+
+ENV USER=solana
+ARG SOLANA_VERSION=1.18.26
+COPY --chown=${USER}:${USER} --from=go-builder /go/bin/yamlfmt /go/bin/yamlfmt
+COPY --chown=${USER}:${USER} --from=builder /usr/local/cargo /usr/local/cargo
+COPY --chown=${USER}:${USER} --from=builder /usr/local/rustup /usr/local/rustup
+COPY --chown=${USER}:${USER} --from=builder /home/solana/.local/share/solana/install/releases/${SOLANA_VERSION} /home/solana/.local/share/solana/install/releases/${SOLANA_VERSION}
+ENV PATH=${PATH}:/usr/local/cargo/bin:/go/bin:/home/solana/.local/share/solana/install/releases/${SOLANA_VERSION}/bin
+WORKDIR /home/solana
+
+
+ENV USER=solana
+USER solana
+
+ENV CARGO_HOME=/usr/local/cargo
+ENV RUSTUP_HOME=/usr/local/rustup
+RUN rustup default stable
+
+RUN cargo install --git https://github.com/coral-xyz/anchor avm --locked
+RUN avm install 0.30.1 && avm use 0.30.1
+WORKDIR /home/solana/development
+
+LABEL \
+  org.label-schema.name="solana-dev" \
+  org.label-schema.description="Solana + Anchor + node Development Container" \
+  org.label-schema.url="https://github.com/renancorreadev/solana-dev" \
+  org.label-schema.vcs-url="git@github.com:renancorreadev/solana-dev.git" \
+  org.label-schema.vendor="renancorreadev" \
+  org.label-schema.version=${SOLANA_VERSION} \
+  org.label-schema.schema-version="1.0" \
+  org.opencontainers.image.description="Solana + Anchor + node Development Container for Visual Studio Code"

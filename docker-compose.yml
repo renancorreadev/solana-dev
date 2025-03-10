@@ -1,0 +1,13 @@
+services:
+  solana-dev:
+    image: skynance/solana-dev:latest
+    container_name: solana-dev
+    restart: always
+    ports:
+      - "8899:8899" 
+      - "8900:8900" 
+    volumes:
+      - ./test-ledger:/home/solana/test-ledger
+    environment:
+      - SOLANA_LEDGER=/home/solana/test-ledger
+    command: solana-test-validator --ledger /home/solana/test-ledger --reset
