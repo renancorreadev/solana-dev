@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.0.9](https://github.com/renancorreadev/solana-dev/compare/v0.0.3...v0.0.9) (2025-03-10)
+
+
+### Features
+
+* add vscode ([84a48c3](https://github.com/renancorreadev/solana-dev/commit/84a48c327f6ab71526805bba4e9a0774fb7758d7))
+* update ([a9d340b](https://github.com/renancorreadev/solana-dev/commit/a9d340bf27a84adaa4ed09f67b67549489c5502a))
+* update features ([9070316](https://github.com/renancorreadev/solana-dev/commit/9070316027f6ff0819af4a2e0d3e4fc10c06061b))
+
+
+### Bug Fixes
+
+* ajusts ([786b1c5](https://github.com/renancorreadev/solana-dev/commit/786b1c506d87203b0e60061b4967f45fb0bf38cc))
+* remove node_modules ([d0cd75d](https://github.com/renancorreadev/solana-dev/commit/d0cd75dfacd3f0b0e3b468cab926d5d4e5ed3f1a))
+
 ### [0.0.8](https://github.com/renancorreadev/solana-dev/compare/v0.0.3...v0.0.8) (2025-03-09)
 
 
