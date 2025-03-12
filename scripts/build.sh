@@ -2,6 +2,8 @@
 
 VERSION=$(git rev-parse HEAD | cut -c 1-8)
 
+VERSION=1.0.0
+
 PROJECT=skynance/solana-local
 
 # cross platform okay:

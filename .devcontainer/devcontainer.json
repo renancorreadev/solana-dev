@@ -1,12 +1,18 @@
 {
 	"name": "Solana Dev Container",
-	"image": "skynance/solana-dev:latest",
+	"image": "skynance/solana-local:1.0.0",
 	"workspaceMount": "source=${localWorkspaceFolder},target=/home/solana/development,type=bind",
 	"workspaceFolder": "/home/solana/development",
 	"remoteUser": "solana",
 	"forwardPorts": [
 		8899,
 		8900
+	],
+	"mounts": [
+		"source=solana-cargo-cache,target=/home/solana/.cargo,type=volume",
+		"source=solana-cli-cache,target=/home/solana/.local/share/solana,type=volume",
+		"source=solana-npm-cache,target=/home/solana/.npm,type=volume",
+		"source=solana-target-cache,target=/home/solana/development/target,type=volume"
 	],
 	"customizations": {
 		"vscode": {

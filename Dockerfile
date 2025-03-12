@@ -1,121 +1,61 @@
-# Stage 1: Build yamlfmt
-FROM golang:1 AS go-builder
-# defined from build kit
-# DOCKER_BUILDKIT=1 docker build . -t ...
-ARG TARGETARCH
+# Usar a imagem oficial do Ubuntu 20.04 como base para a arquitetura amd64
+FROM --platform=linux/amd64 ubuntu:22.04
 
-# Install yamlfmt
-WORKDIR /yamlfmt
-RUN go install github.com/google/yamlfmt/cmd/yamlfmt@latest && \
-  strip $(which yamlfmt) && \
-  yamlfmt --version
+# Definir o fuso horário para evitar prompts durante a instalação
+ENV TZ=America/Sao_Paulo
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-FROM rust:1-slim AS builder
-ARG TARGETARCH
-RUN export DEBIAN_FRONTEND=noninteractive && \
-  apt-get update && \
-  apt-get install -y -q --no-install-recommends \
-  build-essential \
-  ca-certificates \
-  curl \
-  git \
-  gnupg2 \
-  libc6-dev \ 
-  libclang-dev \
-  libssl-dev \
-  libudev-dev \
-  linux-headers-${TARGETARCH} \
-  llvm \
-  openssl \
-  pkg-config \
-  protobuf-compiler \
-  python3 \
-  && \
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Atualizar o sistema e instalar dependências necessárias
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    build-essential \
+    libssl-dev \
+    pkg-config \
+    python3 \
+    sudo \
+    ca-certificates \
+    && apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-ENV USER=solana
-RUN useradd --create-home -s /bin/bash ${USER} && \
-  usermod -a -G sudo ${USER} && \
-  echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
-  chown -R ${USER}:${USER} /home/${USER}
+# Criar usuário 'solana' com permissões sudo
+RUN useradd --create-home -s /bin/bash solana && \
+    usermod -aG sudo solana && \
+    echo 'solana ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
+# Alternar para o usuário 'solana'
 USER solana
-
-WORKDIR /build
-RUN chown -R ${USER}:${USER} /build
-
-ENV PATH=${PATH}:/home/solana/.cargo/bin
-RUN echo ${PATH} && cargo --version
-
-# Solana
-ARG SOLANA_VERSION=1.18.26
-ADD --chown=${USER}:${USER} https://github.com/solana-labs/solana/archive/refs/tags/v${SOLANA_VERSION}.tar.gz v${SOLANA_VERSION}.tar.gz
-RUN tar -zxvf v${SOLANA_VERSION}.tar.gz || { echo "Failed to extract tarball"; exit 1; }
-RUN ./solana-${SOLANA_VERSION}/scripts/cargo-install-all.sh /home/solana/.local/share/solana/install/releases/${SOLANA_VERSION}
-RUN for file in /home/solana/.local/share/solana/install/releases/${SOLANA_VERSION}/bin/*; do strip ${file}; done
-ENV PATH=$/build/bin:$PATH
-
-ENV SOLANA=${SOLANA_VERSION}
-CMD echo "Solana in /home/solana/.local/share/solana/install/releases/${SOLANA_VERSION}"
-
-FROM jac18281828/tsdev:latest
-
-RUN export DEBIAN_FRONTEND=noninteractive && \
-  apt-get update && \
-  apt-get install -y -q --no-install-recommends \
-  build-essential \
-  ca-certificates \
-  curl \
-  git \
-  libssl-dev \
-  openssl \
-  pkg-config \
-  procps \
-  protobuf-compiler \
-  python3 \
-  python3-pip \
-  ripgrep \
-  sudo \
-  && \
-  apt-get clean && \
-  rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-RUN echo "building platform $(uname -m)"
-
-ENV USER=solana
-RUN useradd --create-home -s /bin/bash ${USER} && \
-  usermod -a -G sudo ${USER} && \
-  echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
-  chown -R ${USER}:${USER} /home/${USER}
-
-ENV USER=solana
-ARG SOLANA_VERSION=1.18.26
-COPY --chown=${USER}:${USER} --from=go-builder /go/bin/yamlfmt /go/bin/yamlfmt
-COPY --chown=${USER}:${USER} --from=builder /usr/local/cargo /usr/local/cargo
-COPY --chown=${USER}:${USER} --from=builder /usr/local/rustup /usr/local/rustup
-COPY --chown=${USER}:${USER} --from=builder /home/solana/.local/share/solana/install/releases/${SOLANA_VERSION} /home/solana/.local/share/solana/install/releases/${SOLANA_VERSION}
-ENV PATH=${PATH}:/usr/local/cargo/bin:/go/bin:/home/solana/.local/share/solana/install/releases/${SOLANA_VERSION}/bin
 WORKDIR /home/solana
 
+# Instalar Rust e Cargo
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/home/solana/.cargo/bin:${PATH}"
 
-ENV USER=solana
-USER solana
+# Instalar Node.js 22
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && \
+    sudo apt-get install -y nodejs
 
-ENV CARGO_HOME=/usr/local/cargo
-ENV RUSTUP_HOME=/usr/local/rustup
-RUN rustup default stable
+# Verificar instalações
+RUN node -v && npm -v && rustc --version && cargo --version
 
-RUN cargo install --git https://github.com/coral-xyz/anchor avm --locked
-RUN avm install 0.30.1 && avm use 0.30.1
+# Instalar Anchor Version Manager (AVM) e Anchor CLI
+RUN cargo install --git https://github.com/coral-xyz/anchor avm --locked -j 2 && \
+    /home/solana/.cargo/bin/avm install 0.30.1 && \
+    /home/solana/.cargo/bin/avm use 0.30.1
+
+# Instalar Solana CLI
+RUN curl -sSfL https://release.anza.xyz/stable/install | sh
+
+# Adicionar Solana CLI ao PATH
+ENV PATH="/home/solana/.local/share/solana/install/active_release/bin:${PATH}"
+
+# Verificar instalação do Solana CLI
+RUN solana --version
+
+# Definir o diretório de trabalho
 WORKDIR /home/solana/development
 
-LABEL \
-  org.label-schema.name="solana-dev" \
-  org.label-schema.description="Solana + Anchor + node Development Container" \
-  org.label-schema.url="https://github.com/renancorreadev/solana-dev" \
-  org.label-schema.vcs-url="git@github.com:renancorreadev/solana-dev.git" \
-  org.label-schema.vendor="renancorreadev" \
-  org.label-schema.version=${SOLANA_VERSION} \
-  org.label-schema.schema-version="1.0" \
-  org.opencontainers.image.description="Solana + Anchor + node Development Container for Visual Studio Code"
+RUN --mount=type=cache,target=/home/solana/.cargo 
+
+# Comando padrão
+CMD ["bash"]
