@@ -2,7 +2,7 @@
 
 VERSION=$(git rev-parse HEAD | cut -c 1-8)
 
-PROJECT=skynance/$(basename ${PWD})
+PROJECT=skynance/solana-local
 
 # cross platform okay:
 # --platform=amd64 or arm64
