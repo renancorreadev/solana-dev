@@ -51,6 +51,7 @@ ENV PATH="/home/solana/.local/share/solana/install/active_release/bin:${PATH}"
 
 # Verificar instalação do Solana CLI
 RUN solana --version
+RUN sudo npm install --global git-open
 
 # Definir o diretório de trabalho
 WORKDIR /home/solana/development
