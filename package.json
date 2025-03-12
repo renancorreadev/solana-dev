@@ -1,6 +1,6 @@
 {
   "name": "solana-dev",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Solana + Anchor + node Development Container for Visual Studio Code",
   "author": "Renan Correa",
   "license": "MIT",
